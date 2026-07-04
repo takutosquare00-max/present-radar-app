@@ -5,6 +5,8 @@ const REPO = "present-radar";
 const API = `https://api.github.com/repos/${OWNER}/${REPO}/contents`;
 
 let token = localStorage.getItem("gh_token") || "";
+let profile = JSON.parse(localStorage.getItem("profile") || "{}");
+const PROFILE_KEYS = ["氏名", "ふりがな", "郵便番号", "住所", "電話番号", "メールアドレス"];
 let campaigns = [];   // data/campaigns.json の内容
 let statuses = {};    // data/status.json: url -> {status, at}
 let statusSha = null;
@@ -138,17 +140,19 @@ function render() {
     b.classList.toggle("on", b.dataset.tab === view.tab));
 
   $("#list").innerHTML = rows.map((c, i) => {
-    const url = safeHttpUrl(c.url);
+    const d = c.details && c.details.entry_type !== "不明" ? c.details : null;
+    const url = safeHttpUrl(d?.official_url) || safeHttpUrl(c.url);
     const isSoon = c.deadline && c.deadline <= soon;
     return `<div class="card">
       <h2>${esc(c.title)}</h2>
       <div class="meta">
         <span class="badge">${esc(c.category || "その他")}</span>
+        ${d ? `<span class="badge">${esc(d.entry_type)}</span>` : ""}
         ${c.purchase_required ? '<span class="badge buy">購入条件の可能性</span>' : ""}
         ${c.company ? `<span>${esc(c.company)}</span>` : ""}
         ${c.deadline ? `<span class="${isSoon ? "deadline-soon" : ""}">締切 ${esc(c.deadline)}</span>` : ""}
-        <span>${esc(c.source || "")}</span>
       </div>
+      ${d ? renderDetails(d, i) : ""}
       <div class="actions">
         ${url ? `<a class="go" href="${esc(url)}" target="_blank" rel="noopener noreferrer">応募ページ →</a>` : ""}
         ${view.tab !== "applied" ? `<button data-i="${i}" data-set="applied">応募した ✓</button>` : ""}
@@ -161,6 +165,38 @@ function render() {
   document.querySelectorAll("#list button[data-set]").forEach((b) => {
     b.addEventListener("click", () => setStatus(rows[+b.dataset.i].url, b.dataset.set));
   });
+  document.querySelectorAll("#list button[data-copy]").forEach((b) => {
+    b.addEventListener("click", async () => {
+      const draft = rows[+b.dataset.copy]?.details?.draft;
+      if (!draft) return;
+      await navigator.clipboard.writeText(fillDraft(draft));
+      b.textContent = "コピーしました ✓";
+      setTimeout(() => { b.textContent = "ドラフトをコピー"; }, 1500);
+    });
+  });
+}
+
+// --- 応募方法の詳細とドラフト ---
+function fillDraft(draft) {
+  return String(draft).replace(/\{([^}]+)\}/g, (m, key) => profile[key] || m);
+}
+
+function renderList(label, arr) {
+  if (!Array.isArray(arr) || !arr.length) return "";
+  return `<h3>${esc(label)}</h3><ul>${arr.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>`;
+}
+
+function renderDetails(d, i) {
+  const prize = [d.prize, d.winners && `抽選 ${d.winners}`].filter(Boolean).join(" / ");
+  return `<details class="detail">
+    <summary>応募方法と条件を見る</summary>
+    ${prize ? `<h3>賞品</h3><ul><li>${esc(prize)}</li></ul>` : ""}
+    ${renderList("応募条件", d.conditions)}
+    ${renderList("応募手順", d.steps)}
+    ${renderList("入力が必要な情報", d.required_fields)}
+    ${d.draft ? `<div class="draft"><h3>応募ドラフト</h3><pre>${esc(fillDraft(d.draft))}</pre>
+      <button data-copy="${i}">ドラフトをコピー</button></div>` : ""}
+  </details>`;
 }
 
 // --- 画面切り替え・イベント ---
@@ -170,6 +206,9 @@ function showSetup(show) {
   $("#filters").hidden = show;
   $("#list").innerHTML = "";
   $("#count").textContent = "";
+  if (show) {
+    PROFILE_KEYS.forEach((k) => { $(`#p-${k}`).value = profile[k] || ""; });
+  }
 }
 
 function boot() {
@@ -178,21 +217,22 @@ function boot() {
   loadAll().catch((e) => { $("#msg").textContent = e.message; });
 }
 
-$("#token-save").addEventListener("click", () => {
+$("#save-btn").addEventListener("click", () => {
   const t = $("#token-input").value.trim();
-  if (!t) return;
-  token = t;
-  localStorage.setItem("gh_token", t);
-  $("#token-input").value = "";
+  if (t) {
+    token = t;
+    localStorage.setItem("gh_token", t);
+    $("#token-input").value = "";
+  }
+  profile = {};
+  PROFILE_KEYS.forEach((k) => {
+    const v = $(`#p-${k}`).value.trim();
+    if (v) profile[k] = v;
+  });
+  localStorage.setItem("profile", JSON.stringify(profile));
   boot();
 });
-$("#settings-btn").addEventListener("click", () => {
-  if (confirm("保存済みトークンを削除して設定画面を開きますか?")) {
-    localStorage.removeItem("gh_token");
-    token = "";
-    showSetup(true);
-  }
-});
+$("#settings-btn").addEventListener("click", () => showSetup(true));
 $("#reload").addEventListener("click", boot);
 document.querySelectorAll("#tabs button").forEach((b) =>
   b.addEventListener("click", () => { view.tab = b.dataset.tab; render(); }));

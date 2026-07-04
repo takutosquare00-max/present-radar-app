@@ -32,6 +32,18 @@
   #setup button { margin-top: 10px; padding: 10px 18px; border-radius: 8px; border: none;
                   background: #2563eb; color: #fff; font-size: .95rem; }
   #setup ol { padding-left: 20px; font-size: .85rem; opacity: .85; line-height: 1.7; }
+  #setup .hint { font-size: .78rem; opacity: .7; margin: 4px 0 8px; }
+  #profile-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  #profile-fields input { width: 100%; padding: 9px; border-radius: 8px; border: 1px solid #8886;
+                          background: none; color: inherit; font-size: 16px; }
+  .detail { margin-top: 8px; font-size: .82rem; }
+  .detail summary { cursor: pointer; opacity: .85; }
+  .detail h3 { font-size: .8rem; margin: 8px 0 2px; opacity: .7; }
+  .detail ul { margin: 2px 0; padding-left: 18px; line-height: 1.6; }
+  .draft pre { white-space: pre-wrap; word-break: break-all; background: #8881;
+               border-radius: 8px; padding: 10px; font-size: .8rem; margin: 6px 0; }
+  .draft button { padding: 8px 12px; border-radius: 8px; border: 1px solid #8886;
+                  background: none; color: inherit; font-size: .82rem; }
   #tabs { display: flex; gap: 6px; margin: 8px 0; }
   #tabs button { flex: 1; padding: 9px 0; border-radius: 10px; border: 1px solid #8884;
                  background: none; color: inherit; font-size: .9rem; }
@@ -62,15 +74,28 @@
 <div id="msg"></div>
 
 <section id="setup" hidden>
-  <h2>初回設定: アクセストークン</h2>
-  <ol>
-    <li>GitHub → Settings → Developer settings → <b>Fine-grained tokens</b> → Generate new token</li>
-    <li>Repository access: <b>Only select repositories → present-radar</b> だけを選択</li>
-    <li>Permissions → Contents: <b>Read and write</b>(それ以外は不要)</li>
-    <li>生成されたトークンを下に貼り付け(この端末内にのみ保存されます)</li>
-  </ol>
-  <input id="token-input" type="password" placeholder="github_pat_..." autocomplete="off">
-  <button id="token-save">保存して読み込む</button>
+  <h2>アクセストークン</h2>
+  <details>
+    <summary>トークンの作り方</summary>
+    <ol>
+      <li>GitHub → Settings → Developer settings → <b>Fine-grained tokens</b> → Generate new token</li>
+      <li>Repository access: <b>Only select repositories → present-radar</b> だけを選択</li>
+      <li>Permissions → Contents: <b>Read and write</b>(それ以外は不要)</li>
+    </ol>
+  </details>
+  <input id="token-input" type="password" placeholder="github_pat_...(設定済みなら空のまま)" autocomplete="off">
+
+  <h2>プロフィール(応募ドラフト用)</h2>
+  <p class="hint">この端末内にのみ保存され、ドラフトをコピーするときの穴埋めに使われます。GitHubには送信されません。</p>
+  <div id="profile-fields">
+    <input id="p-氏名" placeholder="氏名">
+    <input id="p-ふりがな" placeholder="ふりがな">
+    <input id="p-郵便番号" placeholder="郵便番号" inputmode="numeric">
+    <input id="p-住所" placeholder="住所">
+    <input id="p-電話番号" placeholder="電話番号" inputmode="tel">
+    <input id="p-メールアドレス" placeholder="メールアドレス" inputmode="email">
+  </div>
+  <button id="save-btn">保存して読み込む</button>
 </section>
 
 <nav id="tabs" hidden>
