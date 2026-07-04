@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- セキュリティ: 外部への通信は GitHub API のみ許可、外部スクリプト・インラインスクリプト禁止 -->
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src https://api.github.com; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#2563eb">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>プレゼント企画レーダー</title>
+<style>
+  :root { color-scheme: light dark; font-family: -apple-system, "Hiragino Sans", sans-serif; }
+  * { box-sizing: border-box; }
+  body { margin: 0 auto; max-width: 720px; padding: 8px 12px calc(24px + env(safe-area-inset-bottom)); }
+  header { display: flex; align-items: center; gap: 8px; padding: 8px 0; }
+  h1 { font-size: 1.15rem; margin: 0; flex: 1; }
+  header button { font-size: 1rem; padding: 6px 10px; border-radius: 8px; border: 1px solid #8886;
+                  background: none; color: inherit; }
+  .badge { font-size: .75rem; padding: 2px 8px; border-radius: 10px; background: #8882; }
+  .badge.buy { background: #d9770633; }
+  #msg { color: #dc2626; font-size: .85rem; min-height: 1.2em; }
+  #setup { border: 1px solid #8884; border-radius: 12px; padding: 16px; margin: 12px 0; }
+  #setup h2 { font-size: 1rem; margin-top: 0; }
+  #setup input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #8886;
+                 background: none; color: inherit; font-size: 16px; }
+  #setup button { margin-top: 10px; padding: 10px 18px; border-radius: 8px; border: none;
+                  background: #2563eb; color: #fff; font-size: .95rem; }
+  #setup ol { padding-left: 20px; font-size: .85rem; opacity: .85; line-height: 1.7; }
+  #tabs { display: flex; gap: 6px; margin: 8px 0; }
+  #tabs button { flex: 1; padding: 9px 0; border-radius: 10px; border: 1px solid #8884;
+                 background: none; color: inherit; font-size: .9rem; }
+  #tabs button.on { background: #2563eb; color: #fff; border-color: #2563eb; }
+  #filters { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px;
+             font-size: .85rem; }
+  #filters select { padding: 7px 8px; border-radius: 8px; border: 1px solid #8886;
+                    background: none; color: inherit; font-size: .85rem; max-width: 46vw; }
+  #filters label { display: flex; align-items: center; gap: 4px; }
+  .card { border: 1px solid #8884; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+  .card h2 { font-size: .95rem; margin: 0 0 6px; line-height: 1.45; }
+  .meta { font-size: .78rem; opacity: .75; display: flex; gap: 10px; flex-wrap: wrap; }
+  .deadline-soon { color: #dc2626; font-weight: 600; }
+  .actions { margin-top: 10px; display: flex; gap: 8px; }
+  .actions a.go { background: #2563eb; color: #fff; padding: 9px 14px; border-radius: 8px;
+                  text-decoration: none; font-size: .85rem; }
+  .actions button { padding: 9px 12px; border-radius: 8px; border: 1px solid #8886;
+                    background: none; color: inherit; font-size: .85rem; }
+  .empty { opacity: .6; padding: 48px 0; text-align: center; font-size: .9rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🎁 企画レーダー <span id="count" class="badge"></span></h1>
+  <button id="reload" title="再読み込み">↻</button>
+  <button id="settings-btn" title="設定">⚙</button>
+</header>
+<div id="msg"></div>
+
+<section id="setup" hidden>
+  <h2>初回設定: アクセストークン</h2>
+  <ol>
+    <li>GitHub → Settings → Developer settings → <b>Fine-grained tokens</b> → Generate new token</li>
+    <li>Repository access: <b>Only select repositories → present-radar</b> だけを選択</li>
+    <li>Permissions → Contents: <b>Read and write</b>(それ以外は不要)</li>
+    <li>生成されたトークンを下に貼り付け(この端末内にのみ保存されます)</li>
+  </ol>
+  <input id="token-input" type="password" placeholder="github_pat_..." autocomplete="off">
+  <button id="token-save">保存して読み込む</button>
+</section>
+
+<nav id="tabs" hidden>
+  <button data-tab="new">未応募</button>
+  <button data-tab="applied">応募済み</button>
+  <button data-tab="skipped">スキップ</button>
+</nav>
+<div id="filters" hidden>
+  <select id="cat"><option value="">全カテゴリー</option></select>
+  <label><input type="checkbox" id="free">購入条件を除く</label>
+  <label><input type="checkbox" id="expired">締切切れも表示</label>
+</div>
+<main id="list"></main>
+
+<script src="app.js"></script>
+</body>
+</html>
