@@ -34,8 +34,10 @@
   #setup ol { padding-left: 20px; font-size: .85rem; opacity: .85; line-height: 1.7; }
   #setup .hint { font-size: .78rem; opacity: .7; margin: 4px 0 8px; }
   #profile-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  #profile-fields input { width: 100%; padding: 9px; border-radius: 8px; border: 1px solid #8886;
-                          background: none; color: inherit; font-size: 16px; }
+  #profile-fields input, #profile-fields select {
+    width: 100%; padding: 9px; border-radius: 8px; border: 1px solid #8886;
+    background: none; color: inherit; font-size: 16px; }
+  #profile-fields .wide { grid-column: 1 / -1; }
   .detail { margin-top: 8px; font-size: .82rem; }
   .detail summary { cursor: pointer; opacity: .85; }
   .detail h3 { font-size: .8rem; margin: 8px 0 2px; opacity: .7; }
@@ -88,12 +90,22 @@
   <h2>プロフィール(応募ドラフト用)</h2>
   <p class="hint">この端末内にのみ保存され、ドラフトをコピーするときの穴埋めに使われます。GitHubには送信されません。</p>
   <div id="profile-fields">
-    <input id="p-氏名" placeholder="氏名">
-    <input id="p-ふりがな" placeholder="ふりがな">
-    <input id="p-郵便番号" placeholder="郵便番号" inputmode="numeric">
-    <input id="p-住所" placeholder="住所">
-    <input id="p-電話番号" placeholder="電話番号" inputmode="tel">
-    <input id="p-メールアドレス" placeholder="メールアドレス" inputmode="email">
+    <input id="p-姓" placeholder="姓" autocomplete="family-name">
+    <input id="p-名" placeholder="名" autocomplete="given-name">
+    <input id="p-姓ふりがな" placeholder="せい(ふりがな)">
+    <input id="p-名ふりがな" placeholder="めい(ふりがな)">
+    <input id="p-郵便番号" placeholder="郵便番号(例: 1500001)" inputmode="numeric" autocomplete="postal-code">
+    <input id="p-都道府県" placeholder="都道府県">
+    <input id="p-市区町村" placeholder="市区町村">
+    <input id="p-番地" placeholder="番地(例: 1-2-3)">
+    <input id="p-建物名" placeholder="建物名・部屋番号(任意)" class="wide">
+    <input id="p-電話番号" placeholder="電話番号" inputmode="tel" autocomplete="tel">
+    <input id="p-メールアドレス" placeholder="メールアドレス" inputmode="email" autocomplete="email">
+    <input id="p-生年月日" placeholder="生年月日(例: 1990/01/23)" inputmode="numeric">
+    <select id="p-性別">
+      <option value="">性別(未設定)</option>
+      <option>男性</option><option>女性</option><option>回答しない</option>
+    </select>
   </div>
   <button id="save-btn">保存して読み込む</button>
 </section>

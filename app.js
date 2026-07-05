@@ -6,7 +6,9 @@ const API = `https://api.github.com/repos/${OWNER}/${REPO}/contents`;
 
 let token = localStorage.getItem("gh_token") || "";
 let profile = JSON.parse(localStorage.getItem("profile") || "{}");
-const PROFILE_KEYS = ["氏名", "ふりがな", "郵便番号", "住所", "電話番号", "メールアドレス"];
+const PROFILE_KEYS = ["姓", "名", "姓ふりがな", "名ふりがな", "郵便番号", "都道府県",
+                      "市区町村", "番地", "建物名", "電話番号", "メールアドレス",
+                      "生年月日", "性別"];
 let campaigns = [];   // data/campaigns.json の内容
 let statuses = {};    // data/status.json: url -> {status, at}
 let statusSha = null;
@@ -176,8 +178,22 @@ function render() {
 }
 
 // --- 応募方法の詳細とドラフト ---
+// 分割保存された項目から複合プレースホルダー({氏名}{住所}など)を合成する。
+// 旧形式(氏名・住所を1項目で保存)のプロフィールもそのまま使える。
+function profileValue(key) {
+  if (profile[key]) return profile[key];
+  const join = (...parts) => parts.filter(Boolean).join(" ").trim();
+  switch (key) {
+    case "氏名": return join(profile["姓"], profile["名"]);
+    case "ふりがな": return join(profile["姓ふりがな"], profile["名ふりがな"]);
+    case "住所": return [profile["都道府県"], profile["市区町村"],
+                        profile["番地"], profile["建物名"]].filter(Boolean).join("");
+    default: return "";
+  }
+}
+
 function fillDraft(draft) {
-  return String(draft).replace(/\{([^}]+)\}/g, (m, key) => profile[key] || m);
+  return String(draft).replace(/\{([^}]+)\}/g, (m, key) => profileValue(key) || m);
 }
 
 function renderList(label, arr) {
