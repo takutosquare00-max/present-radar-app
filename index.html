@@ -50,6 +50,12 @@
   #tabs button { flex: 1; padding: 9px 0; border-radius: 10px; border: 1px solid #8884;
                  background: none; color: inherit; font-size: .9rem; }
   #tabs button.on { background: #2563eb; color: #fff; border-color: #2563eb; }
+  #method-tabs { display: flex; gap: 6px; margin: 0 0 10px; flex-wrap: wrap; }
+  #method-tabs button { flex: 1; min-width: fit-content; padding: 7px 8px; border-radius: 10px;
+                        border: 1px solid #8884; background: none; color: inherit; font-size: .82rem; }
+  #method-tabs button.on { background: #0f766e; color: #fff; border-color: #0f766e; }
+  #method-tabs .mc { font-size: .72rem; opacity: .7; }
+  #method-tabs button.on .mc { opacity: .9; }
   #filters { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px;
              font-size: .85rem; }
   #filters select { padding: 7px 8px; border-radius: 8px; border: 1px solid #8886;
@@ -114,6 +120,13 @@
   <button data-tab="new">未応募</button>
   <button data-tab="applied">応募済み</button>
   <button data-tab="skipped">スキップ</button>
+</nav>
+<nav id="method-tabs" hidden>
+  <button data-method="all">すべて <span class="mc"></span></button>
+  <button data-method="X">X <span class="mc"></span></button>
+  <button data-method="Web">Web <span class="mc"></span></button>
+  <button data-method="Instagram">Instagram <span class="mc"></span></button>
+  <button data-method="その他">その他 <span class="mc"></span></button>
 </nav>
 <div id="filters" hidden>
   <select id="cat"><option value="">全カテゴリー</option></select>
