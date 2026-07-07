@@ -50,6 +50,12 @@
   #tabs button { flex: 1; padding: 9px 0; border-radius: 10px; border: 1px solid #8884;
                  background: none; color: inherit; font-size: .9rem; }
   #tabs button.on { background: #2563eb; color: #fff; border-color: #2563eb; }
+  #period-tabs { display: flex; gap: 6px; margin: 0 0 6px; }
+  #period-tabs button { flex: 1; padding: 7px 8px; border-radius: 10px; border: 1px solid #8884;
+                        background: none; color: inherit; font-size: .82rem; }
+  #period-tabs button.on { background: #b45309; color: #fff; border-color: #b45309; }
+  #period-tabs .mc { font-size: .72rem; opacity: .75; }
+  .badge.start { background: #b4530933; }
   #method-tabs { display: flex; gap: 6px; margin: 0 0 10px; flex-wrap: wrap; }
   #method-tabs button { flex: 1; min-width: fit-content; padding: 7px 8px; border-radius: 10px;
                         border: 1px solid #8884; background: none; color: inherit; font-size: .82rem; }
@@ -120,6 +126,10 @@
   <button data-tab="new">未応募</button>
   <button data-tab="applied">応募済み</button>
   <button data-tab="skipped">スキップ</button>
+</nav>
+<nav id="period-tabs" hidden>
+  <button data-period="open">期間中 <span class="mc"></span></button>
+  <button data-period="upcoming">期間前 <span class="mc"></span></button>
 </nav>
 <nav id="method-tabs" hidden>
   <button data-method="all">すべて <span class="mc"></span></button>
