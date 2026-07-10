@@ -22,3 +22,9 @@
 - 状態変更は端末のlocalStorageへ即時保存し、GitHubへは10件単位または
   5分後にまとめて同期する。ヘッダーの同期ボタンで手動同期も可能
 - Mac側は `python -m radar.sync` が status.json をローカルSQLiteに反映する
+
+テスト:
+
+```sh
+node --test tests/*.test.js
+```
