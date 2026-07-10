@@ -19,4 +19,6 @@
   GitHub Contents API で取得
 - 書き込み: 応募した/スキップ を `data/status.json` に PUT(sha競合時は
   リモートとマージして再送)
+- 状態変更は端末のlocalStorageへ即時保存し、GitHubへは10件単位または
+  5分後にまとめて同期する。ヘッダーの同期ボタンで手動同期も可能
 - Mac側は `python -m radar.sync` が status.json をローカルSQLiteに反映する

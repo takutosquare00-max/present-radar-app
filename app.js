@@ -12,6 +12,12 @@ const PROFILE_KEYS = ["姓", "名", "姓ふりがな", "名ふりがな", "郵�
 let campaigns = [];   // data/campaigns.json の内容
 let statuses = {};    // data/status.json: url -> {status, at}
 let statusSha = null;
+const PENDING_STATUS_KEY = "pending_statuses_v1";
+const SYNC_BATCH_SIZE = 10;
+const SYNC_DELAY_MS = 5 * 60 * 1000;
+let pendingStatuses = StatusSync.parsePendingStatuses(localStorage.getItem(PENDING_STATUS_KEY));
+let syncTimer = null;
+let syncPromise = null;
 const view = { tab: "new", period: "open", method: "all", cat: "", expired: false };
 
 // 応募方法タブ: entry_type をどのタブに入れるか。
@@ -90,31 +96,56 @@ async function loadAll() {
   if (sRes.ok) {
     const j = await sRes.json();
     statusSha = j.sha;
-    statuses = JSON.parse(b64decode(j.content));
+    statuses = StatusSync.applyStatusChanges(JSON.parse(b64decode(j.content)), pendingStatuses);
   } else if (sRes.status === 404) {
-    statuses = {};
+    statuses = StatusSync.applyStatusChanges({}, pendingStatuses);
     statusSha = null;
   }
   $("#msg").textContent = "";
   buildCategoryOptions();
   render();
+  updateSyncUi();
+  scheduleStatusSync();
 }
 
-// --- ステータス保存(直列化 + 競合時はリモートとマージして再送) ---
-let saveChain = Promise.resolve();
+// --- ステータス保存(端末へ即時保存 + GitHubへバッチ同期) ---
+
+function savePendingStatuses() {
+  localStorage.setItem(PENDING_STATUS_KEY, JSON.stringify(pendingStatuses));
+  updateSyncUi();
+}
+
+function updateSyncUi(syncing = false) {
+  const count = Object.keys(pendingStatuses).length;
+  const button = $("#sync-status");
+  button.hidden = count === 0 && !syncing;
+  button.disabled = syncing;
+  $("#pending-count").textContent = String(count);
+  button.title = syncing ? "同期中" : `未同期 ${count}件。タップして同期`;
+}
+
+function scheduleStatusSync() {
+  clearTimeout(syncTimer);
+  if (!token || Object.keys(pendingStatuses).length === 0) return;
+  if (Object.keys(pendingStatuses).length >= SYNC_BATCH_SIZE) {
+    void flushPendingStatuses();
+    return;
+  }
+  syncTimer = setTimeout(() => { void flushPendingStatuses(); }, SYNC_DELAY_MS);
+}
 
 function setStatus(url, status) {
-  if (status === "new") delete statuses[url];
-  else statuses[url] = { status, at: new Date().toISOString() };
+  const change = { status, at: new Date().toISOString() };
+  pendingStatuses[url] = change;
+  statuses = StatusSync.applyStatusChanges(statuses, { [url]: change });
+  savePendingStatuses();
   render();
-  saveChain = saveChain
-    .then(() => pushStatuses(2))
-    .catch((e) => { $("#msg").textContent = `保存失敗: ${e.message}(↻で再試行)`; });
+  scheduleStatusSync();
 }
 
-async function pushStatuses(retries) {
+async function pushStatuses(changeCount, retries) {
   const body = {
-    message: "status: スマホから更新",
+    message: `status: ${changeCount}件をまとめて更新`,
     content: b64encode(JSON.stringify(statuses, null, 1)),
     ...(statusSha ? { sha: statusSha } : {}),
   };
@@ -128,11 +159,43 @@ async function pushStatuses(retries) {
     if (cur.ok) {
       const j = await cur.json();
       statusSha = j.sha;
-      statuses = { ...JSON.parse(b64decode(j.content)), ...statuses };
+      statuses = StatusSync.applyStatusChanges(
+        JSON.parse(b64decode(j.content)), pendingStatuses);
+      render();
     }
-    return pushStatuses(retries - 1);
+    return pushStatuses(changeCount, retries - 1);
   }
   throw new Error(`HTTP ${res.status}`);
+}
+
+function flushPendingStatuses() {
+  if (syncPromise) return syncPromise;
+  const snapshot = structuredClone(pendingStatuses);
+  const count = Object.keys(snapshot).length;
+  if (!token || count === 0) return Promise.resolve();
+
+  clearTimeout(syncTimer);
+  updateSyncUi(true);
+  $("#msg").textContent = `${count}件を同期中…`;
+  syncPromise = pushStatuses(count, 2)
+    .then(() => {
+      pendingStatuses = StatusSync.removeSyncedChanges(pendingStatuses, snapshot);
+      savePendingStatuses();
+      $("#msg").textContent = "同期しました";
+      setTimeout(() => {
+        if ($("#msg").textContent === "同期しました") $("#msg").textContent = "";
+      }, 1500);
+    })
+    .catch((e) => {
+      $("#msg").textContent = `同期失敗: ${e.message}。未同期データは端末に保持しています`;
+      throw e;
+    })
+    .finally(() => {
+      syncPromise = null;
+      updateSyncUi();
+      scheduleStatusSync();
+    });
+  return syncPromise;
 }
 
 // --- 描画 ---
@@ -305,6 +368,9 @@ $("#save-btn").addEventListener("click", () => {
 });
 $("#settings-btn").addEventListener("click", () => showSetup(true));
 $("#reload").addEventListener("click", boot);
+$("#sync-status").addEventListener("click", () => {
+  flushPendingStatuses().catch(() => {});
+});
 document.querySelectorAll("#tabs button").forEach((b) =>
   b.addEventListener("click", () => { view.tab = b.dataset.tab; render(); }));
 document.querySelectorAll("#method-tabs button").forEach((b) =>
@@ -313,5 +379,6 @@ document.querySelectorAll("#period-tabs button").forEach((b) =>
   b.addEventListener("click", () => { view.period = b.dataset.period; render(); }));
 $("#cat").addEventListener("change", (e) => { view.cat = e.target.value; render(); });
 $("#expired").addEventListener("change", (e) => { view.expired = e.target.checked; render(); });
+window.addEventListener("online", () => { void flushPendingStatuses(); });
 
 boot();
