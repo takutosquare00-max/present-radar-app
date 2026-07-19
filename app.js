@@ -4,8 +4,25 @@ const OWNER = "takutosquare00-max";
 const REPO = "present-radar";
 const API = `https://api.github.com/repos/${OWNER}/${REPO}/contents`;
 
+function parseJsonOrDefault(value, defaultValue) {
+  try {
+    return JSON.parse(value || "{}");
+  } catch (e) {
+    console.error("Failed to parse saved JSON; using default value.", e);
+    return defaultValue;
+  }
+}
+
+function setLocalStorageItem(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch (e) {
+    console.error(`Failed to save ${key} to localStorage; storage may be full.`, e);
+  }
+}
+
 let token = localStorage.getItem("gh_token") || "";
-let profile = JSON.parse(localStorage.getItem("profile") || "{}");
+let profile = parseJsonOrDefault(localStorage.getItem("profile"), {});
 const PROFILE_KEYS = ["姓", "名", "姓ふりがな", "名ふりがな", "郵便番号", "都道府県",
                       "市区町村", "番地", "建物名", "電話番号", "メールアドレス",
                       "生年月日", "性別"];
@@ -96,7 +113,7 @@ async function loadAll() {
   if (sRes.ok) {
     const j = await sRes.json();
     statusSha = j.sha;
-    statuses = StatusSync.applyStatusChanges(JSON.parse(b64decode(j.content)), pendingStatuses);
+    statuses = StatusSync.applyStatusChanges(parseJsonOrDefault(b64decode(j.content), {}), pendingStatuses);
   } else if (sRes.status === 404) {
     statuses = StatusSync.applyStatusChanges({}, pendingStatuses);
     statusSha = null;
@@ -111,7 +128,7 @@ async function loadAll() {
 // --- ステータス保存(端末へ即時保存 + GitHubへバッチ同期) ---
 
 function savePendingStatuses() {
-  localStorage.setItem(PENDING_STATUS_KEY, JSON.stringify(pendingStatuses));
+  setLocalStorageItem(PENDING_STATUS_KEY, JSON.stringify(pendingStatuses));
   updateSyncUi();
 }
 
@@ -160,7 +177,7 @@ async function pushStatuses(changeCount, retries) {
       const j = await cur.json();
       statusSha = j.sha;
       statuses = StatusSync.applyStatusChanges(
-        JSON.parse(b64decode(j.content)), pendingStatuses);
+        parseJsonOrDefault(b64decode(j.content), {}), pendingStatuses);
       render();
     }
     return pushStatuses(changeCount, retries - 1);
@@ -355,7 +372,7 @@ $("#save-btn").addEventListener("click", () => {
   const t = $("#token-input").value.trim();
   if (t) {
     token = t;
-    localStorage.setItem("gh_token", t);
+    setLocalStorageItem("gh_token", t);
     $("#token-input").value = "";
   }
   profile = {};
@@ -363,7 +380,7 @@ $("#save-btn").addEventListener("click", () => {
     const v = $(`#p-${k}`).value.trim();
     if (v) profile[k] = v;
   });
-  localStorage.setItem("profile", JSON.stringify(profile));
+  setLocalStorageItem("profile", JSON.stringify(profile));
   boot();
 });
 $("#settings-btn").addEventListener("click", () => showSetup(true));
