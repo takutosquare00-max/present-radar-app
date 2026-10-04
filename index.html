@@ -26,6 +26,7 @@
   #pending-count { font-size: .72rem; font-variant-numeric: tabular-nums; }
   .badge { font-size: .75rem; padding: 2px 8px; border-radius: 10px; background: #8882; }
   .badge.buy { background: #d9770633; }
+  .badge.asset { background: #ca8a0440; font-weight: 600; }
   #msg { color: #dc2626; font-size: .85rem; min-height: 1.2em; }
   #setup { border: 1px solid #8884; border-radius: 12px; padding: 16px; margin: 12px 0; }
   #setup h2 { font-size: 1rem; margin-top: 0; }
@@ -143,6 +144,7 @@
 </nav>
 <div id="filters" hidden>
   <select id="cat"><option value="">全カテゴリー</option></select>
+  <label><input type="checkbox" id="asset-only">💎資産系のみ</label>
   <label><input type="checkbox" id="expired">締切切れも表示</label>
 </div>
 <main id="list"></main>

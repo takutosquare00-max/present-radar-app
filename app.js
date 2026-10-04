@@ -35,7 +35,10 @@ const SYNC_DELAY_MS = 5 * 60 * 1000;
 let pendingStatuses = StatusSync.parsePendingStatuses(localStorage.getItem(PENDING_STATUS_KEY));
 let syncTimer = null;
 let syncPromise = null;
-const view = { tab: "new", period: "open", method: "all", cat: "", expired: false };
+const view = { tab: "new", period: "open", method: "all", cat: "", expired: false, assetOnly: false };
+// 資産価値のある賞品(貴金属・宝石・記念硬貨・高級時計・希少ウイスキー)。収集側 radar/config.py の ASSET_CATEGORY と一致させる
+const ASSET_CATEGORY = "資産価値";
+const isAsset = (c) => c.category === ASSET_CATEGORY;
 
 // 応募方法タブ: entry_type をどのタブに入れるか。
 // X と Instagram の両対応投稿は enrich が X(Twitter) と判定するため X タブに入る。
@@ -221,7 +224,8 @@ function statusOf(url) {
 }
 
 function buildCategoryOptions() {
-  const cats = [...new Set(campaigns.map((c) => c.category || "その他"))].sort();
+  const cats = [...new Set(campaigns.map((c) => c.category || "その他"))]
+    .sort((a, b) => (b === ASSET_CATEGORY) - (a === ASSET_CATEGORY) || a.localeCompare(b));
   $("#cat").innerHTML =
     '<option value="">全カテゴリー</option>' +
     cats.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
@@ -262,12 +266,14 @@ function render() {
   const rows = inPeriod
     .filter((c) => view.method === "all" || methodOf(c) === view.method)
     .filter((c) => !view.cat || (c.category || "その他") === view.cat)
+    .filter((c) => !view.assetOnly || isAsset(c))
     .sort((a, b) =>
-      view.period === "upcoming"
+      isAsset(b) - isAsset(a) ||
+      (view.period === "upcoming"
         ? String(a.details?.start_date).localeCompare(String(b.details?.start_date))
         : (a.deadline ? 0 : 1) - (b.deadline ? 0 : 1) ||
           String(a.deadline).localeCompare(String(b.deadline)) ||
-          (b.score || 0) - (a.score || 0));
+          (b.score || 0) - (a.score || 0)));
 
   $("#count").textContent = `${rows.length} 件`;
   document.querySelectorAll("#tabs button").forEach((b) =>
@@ -280,7 +286,7 @@ function render() {
     return `<div class="card">
       <h2>${esc(c.title)}</h2>
       <div class="meta">
-        <span class="badge">${esc(c.category || "その他")}</span>
+        <span class="badge${isAsset(c) ? " asset" : ""}">${isAsset(c) ? "💎 " : ""}${esc(c.category || "その他")}</span>
         ${d ? `<span class="badge">${esc(d.entry_type)}</span>` : ""}
         ${c.purchase_required ? '<span class="badge buy">購入条件の可能性</span>' : ""}
         ${c.company ? `<span>${esc(c.company)}</span>` : ""}
@@ -396,6 +402,7 @@ document.querySelectorAll("#period-tabs button").forEach((b) =>
   b.addEventListener("click", () => { view.period = b.dataset.period; render(); }));
 $("#cat").addEventListener("change", (e) => { view.cat = e.target.value; render(); });
 $("#expired").addEventListener("change", (e) => { view.expired = e.target.checked; render(); });
+$("#asset-only").addEventListener("change", (e) => { view.assetOnly = e.target.checked; render(); });
 window.addEventListener("online", () => { void flushPendingStatuses(); });
 
 boot();
